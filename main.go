@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -18,6 +20,7 @@ import (
 const (
 	initialInputs = 2
 	helpHeight    = 5
+	rightPadding = 4
 )
 
 var (
@@ -59,6 +62,12 @@ func newUrlbar() textinput.Model {
 	return t
 }
 
+func newResponseView() viewport.Model {
+	v := viewport.New(1, 1)
+	v.SetContent("hello")
+	return v
+}
+
 func newTextarea() textarea.Model {
 	t := textarea.New()
 	t.Prompt = ""
@@ -86,6 +95,7 @@ type model struct {
 	help        help.Model
 	requestBody textarea.Model
 	urlbar      textinput.Model
+	response    viewport.Model
 	// focus       int  // will probably want to come back to this when all components are laid out
 }
 
@@ -132,6 +142,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.quit):
 			return m, tea.Quit
 		case key.Matches(msg, m.keymap.request):
+			m.urlbar.Blur()
 			cmd := m.requestBody.Focus()
 			cmds = append(cmds, cmd)
 		case key.Matches(msg, m.keymap.url):
@@ -139,14 +150,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd := m.urlbar.Focus()
 			cmds = append(cmds, cmd)
 		case key.Matches(msg, m.keymap.send):
-			m.sendRequest()
+			m.urlbar.Blur()
+			m.requestBody.Blur()
+			resp := m.sendRequest()
+			m.response.SetContent(resp)
 			// cmds = append(cmds, cmd)
 		}
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
+		m.sizeInputs()
 	}
-	m.sizeInputs()
 
 	// update text area
 	newRequest, cmd := m.requestBody.Update(msg)
@@ -161,9 +175,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+// needs to be a pointer receiver in order to update
 func (m *model) sizeInputs() {
-	m.requestBody.SetWidth(m.width - 2)
-	m.requestBody.SetHeight(m.height - helpHeight)
+	m.urlbar.Width = m.width - rightPadding
+	m.requestBody.SetWidth(m.width - rightPadding)
+	m.requestBody.SetHeight((m.height / 2) - helpHeight)
+	m.response.Height = m.height / 10
+	m.response.Width = m.width - rightPadding
 }
 
 func (m model) View() string {
@@ -179,25 +197,28 @@ func (m model) View() string {
 		lipgloss.Top,
 		"GET "+m.urlbar.View(),
 		m.requestBody.View(),
+		m.response.View(),
 	)
 	doc.WriteString(requestInputs)
+	doc.WriteString(m.response.View())
 	doc.WriteString("\n")
 	doc.WriteString(help)
 
 	return docStyle.Render(doc.String())
 }
 
-func (m model) sendRequest() *http.Response {
+func (m model) sendRequest() string {
 	resp, err := http.Get(m.urlbar.Value())
 	if err != nil {
 		log.Fatalln(err)
 	}
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bodyString := string(bodyBytes)
 
-	// just doing this for now to prove that it's working, look into logging in the future
-	fmt.Println("response: ", &resp.Body)
-	os.Exit(1)
-
-	return resp
+	return bodyString
 }
 
 func main() {
