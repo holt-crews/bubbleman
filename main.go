@@ -20,28 +20,36 @@ import (
 const (
 	initialInputs = 2
 	helpHeight    = 5
-	rightPadding = 4
+	rightPadding  = 4
+
+	black   = "#928374"
+	blue    = "#83a598"
+	cyan    = "#8ec07c"
+	green   = "#b8bb26"
+	magenta = "#d3869b"
+	red     = "#fb4934"
+	white   = "#ebdbb2"
+	yellow  = "#fabd2f"
 )
 
 var (
-	cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("212"))
+	cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(white))
 
 	cursorLineStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("57")).
-			Foreground(lipgloss.Color("230"))
+			Foreground(lipgloss.Color(cyan))
 
 	placeholderStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("238"))
+				Foreground(lipgloss.Color(cyan))
 
 	endOfBufferStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("235"))
+				Foreground(lipgloss.Color(cyan))
 
 	focusedPlaceholderStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("99"))
+				Foreground(lipgloss.Color(cyan))
 
 	focusedBorderStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("238"))
+				BorderForeground(lipgloss.Color(blue))
 
 	blurredBorderStyle = lipgloss.NewStyle().
 				Border(lipgloss.HiddenBorder())
@@ -62,10 +70,12 @@ func newUrlbar() textinput.Model {
 	return t
 }
 
-func newResponseView() viewport.Model {
-	v := viewport.New(1, 1)
-	v.SetContent("hello")
-	return v
+func (m *model) newResponseView() viewport.Model {
+	m.response = viewport.New(1, 1)
+	m.response.Style = focusedBorderStyle
+	m.response.SetContent(fmt.Sprintf("width: %d; height: %d", m.width, m.height))
+	m.response.MouseWheelEnabled = true
+	return m.response
 }
 
 func newTextarea() textarea.Model {
@@ -78,7 +88,7 @@ func newTextarea() textarea.Model {
 	t.BlurredStyle.Placeholder = placeholderStyle
 	t.FocusedStyle.CursorLine = cursorLineStyle
 	t.FocusedStyle.Base = focusedBorderStyle
-	t.BlurredStyle.Base = blurredBorderStyle
+	t.BlurredStyle.Base = focusedBorderStyle
 	t.FocusedStyle.EndOfBuffer = endOfBufferStyle
 	t.BlurredStyle.EndOfBuffer = endOfBufferStyle
 	t.KeyMap.DeleteWordBackward.SetEnabled(false)
@@ -96,6 +106,7 @@ type model struct {
 	requestBody textarea.Model
 	urlbar      textinput.Model
 	response    viewport.Model
+	viewReady   bool
 	// focus       int  // will probably want to come back to this when all components are laid out
 }
 
@@ -123,9 +134,9 @@ func initialModel() model {
 			),
 		},
 	}
+
 	// initially focus on requestBody section
 	m.requestBody.Focus()
-	m.requestBody.SetWidth(m.width)
 	return m
 }
 
@@ -134,7 +145,17 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		rCmd    tea.Cmd
+		uCmd    tea.Cmd
+		respCmd tea.Cmd
+	)
 	var cmds []tea.Cmd
+
+	m.requestBody, rCmd = m.requestBody.Update(msg)
+	m.urlbar, uCmd = m.urlbar.Update(msg)
+	m.response, respCmd = m.response.Update(msg)
+	cmds = append(cmds, rCmd, uCmd, respCmd)
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -159,17 +180,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
+		if !m.viewReady {
+			m.newResponseView()
+			m.viewReady = true
+		}
 		m.sizeInputs()
 	}
-
-	// update text area
-	newRequest, cmd := m.requestBody.Update(msg)
-	m.requestBody = newRequest
-	cmds = append(cmds, cmd)
-
-	newUrl, cmd := m.urlbar.Update(msg)
-	m.urlbar = newUrl
-	cmds = append(cmds, cmd)
 
 	// Update all text
 	return m, tea.Batch(cmds...)
@@ -177,10 +193,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // needs to be a pointer receiver in order to update
 func (m *model) sizeInputs() {
+	totalHeight := m.height - (lipgloss.Height(m.urlbar.View()) + helpHeight)
+
 	m.urlbar.Width = m.width - rightPadding
+
 	m.requestBody.SetWidth(m.width - rightPadding)
-	m.requestBody.SetHeight((m.height / 2) - helpHeight)
-	m.response.Height = m.height / 10
+	m.requestBody.SetHeight(2 * (totalHeight / 3))
+
+	m.response.Height = totalHeight / 3
 	m.response.Width = m.width - rightPadding
 }
 
@@ -200,7 +220,6 @@ func (m model) View() string {
 		m.response.View(),
 	)
 	doc.WriteString(requestInputs)
-	doc.WriteString(m.response.View())
 	doc.WriteString("\n")
 	doc.WriteString(help)
 
@@ -222,7 +241,8 @@ func (m model) sendRequest() string {
 }
 
 func main() {
-	if _, err := tea.NewProgram(initialModel(), tea.WithAltScreen()).Run(); err != nil {
+	// WithMouse is not working in viewport for whatever reason
+	if _, err := tea.NewProgram(initialModel(), tea.WithAltScreen(), tea.WithMouseAllMotion()).Run(); err != nil {
 		fmt.Println("Error while running program:", err)
 		os.Exit(1)
 	}
