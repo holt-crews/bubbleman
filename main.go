@@ -18,9 +18,8 @@ import (
 )
 
 const (
-	initialInputs = 2
-	helpHeight    = 5
-	rightPadding  = 4
+	helpHeight    = 2
+	rightPadding  = 6
 
 	black   = "#928374"
 	blue    = "#83a598"
@@ -73,7 +72,7 @@ func newUrlbar() textinput.Model {
 func (m *model) newResponseView() viewport.Model {
 	m.response = viewport.New(1, 1)
 	m.response.Style = focusedBorderStyle
-	m.response.SetContent(fmt.Sprintf("width: %d; height: %d", m.width, m.height))
+	m.response.SetContent(fmt.Sprintf("{\"response\": \"OK\"...}"))
 	m.response.MouseWheelEnabled = true
 	return m.response
 }
@@ -200,8 +199,10 @@ func (m *model) sizeInputs() {
 	m.requestBody.SetWidth(m.width - rightPadding)
 	m.requestBody.SetHeight(2 * (totalHeight / 3))
 
+	// there's a bug in viewport: https://github.com/charmbracelet/bubbles/pull/388
 	m.response.Height = totalHeight / 3
-	m.response.Width = m.width - rightPadding
+	// .SetWidth() and .Width are calculated differently. 2 seems to be magic difference for my case 
+	m.response.Width = m.width - rightPadding + 2
 }
 
 func (m model) View() string {
