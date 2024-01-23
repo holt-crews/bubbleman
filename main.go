@@ -15,11 +15,14 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/erikgeiser/promptkit/selection"
+
+	"github.com/holt-crews/bubbleman/helpers"
 )
 
 const (
-	helpHeight    = 2
-	rightPadding  = 6
+	helpHeight   = 2
+	rightPadding = 6
 
 	black   = "#928374"
 	blue    = "#83a598"
@@ -32,6 +35,7 @@ const (
 )
 
 var (
+	httpMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"}
 	cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(white))
 
 	cursorLineStyle = lipgloss.NewStyle().
@@ -56,7 +60,7 @@ var (
 )
 
 type keymap = struct {
-	request, url, send, quit key.Binding
+	request, url, httpMethod, send, quit key.Binding
 }
 
 func newUrlbar() textinput.Model {
@@ -98,18 +102,23 @@ func newTextarea() textarea.Model {
 }
 
 type model struct {
-	width       int
-	height      int
-	keymap      keymap
-	help        help.Model
-	requestBody textarea.Model
-	urlbar      textinput.Model
-	response    viewport.Model
-	viewReady   bool
+	width        int
+	height       int
+	keymap       keymap
+	help         help.Model
+	requestBody  textarea.Model
+	urlbar       textinput.Model
+	response     viewport.Model
+	viewReady    bool
+	selection    *selection.Model[string]
+	methodToggle bool
 	// focus       int  // will probably want to come back to this when all components are laid out
 }
 
 func initialModel() model {
+	sel := selection.New("Items", httpMethods)
+	sel.Filter = nil
+
 	m := model{
 		urlbar:      newUrlbar(),
 		requestBody: newTextarea(),
@@ -120,8 +129,12 @@ func initialModel() model {
 				key.WithHelp("tab", "edit request body"),
 			),
 			url: key.NewBinding(
+				key.WithKeys("ctrl+m"),
+				key.WithHelp("ctrl+m", "edit url bar"),
+			),
+			httpMethod: key.NewBinding(
 				key.WithKeys("ctrl+u"),
-				key.WithHelp("ctrl+u", "edit url bar"),
+				key.WithHelp("ctrl+u", "edit http method"),
 			),
 			send: key.NewBinding(
 				key.WithKeys("ctrl+s"),
@@ -132,7 +145,9 @@ func initialModel() model {
 				key.WithHelp("esc", "quit"),
 			),
 		},
+		selection: selection.NewModel(sel),
 	}
+	m.selection.Init()
 
 	// initially focus on requestBody section
 	m.requestBody.Focus()
@@ -169,6 +184,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.requestBody.Blur()
 			cmd := m.urlbar.Focus()
 			cmds = append(cmds, cmd)
+		case key.Matches(msg, m.keymap.httpMethod):
+			m.methodToggle = !m.methodToggle
 		case key.Matches(msg, m.keymap.send):
 			m.urlbar.Blur()
 			m.requestBody.Blur()
@@ -201,7 +218,7 @@ func (m *model) sizeInputs() {
 
 	// there's a bug in viewport: https://github.com/charmbracelet/bubbles/pull/388
 	m.response.Height = totalHeight / 3
-	// .SetWidth() and .Width are calculated differently. 2 seems to be magic difference for my case 
+	// .SetWidth() and .Width are calculated differently. 2 seems to be magic difference for my case
 	m.response.Width = m.width - rightPadding + 2
 }
 
@@ -221,6 +238,10 @@ func (m model) View() string {
 		m.response.View(),
 	)
 	doc.WriteString(requestInputs)
+	if m.methodToggle {
+		overlay := helpers.PlaceOverlay(10, 10, m.selection.View(), doc.String(), false)
+		doc.WriteString(overlay)
+	}
 	doc.WriteString("\n")
 	doc.WriteString(help)
 
