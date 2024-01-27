@@ -129,8 +129,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// cmds = append(cmds, cmd)
 		}
 	case tea.WindowSizeMsg:
-		m.height = msg.Height
-		m.width = msg.Width
+		WindowSize = msg
 		if !m.viewReady {
 			m.newResponseView()
 			m.viewReady = true
@@ -144,17 +143,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // needs to be a pointer receiver in order to update
 func (m *model) sizeInputs() {
-	totalHeight := m.height - (lipgloss.Height(m.urlbar.View()) + helpHeight)
+	top, right, bottom, left := DocStyle.GetMargin()
+	remainingHeight := WindowSize.Height - top - bottom - (lipgloss.Height(m.urlbar.View()) + helpHeight)
+	remainingWidth := WindowSize.Width - left - right
 
-	m.urlbar.Width = m.width - rightPadding
+	m.urlbar.Width = remainingWidth
 
-	m.requestBody.SetWidth(m.width - rightPadding)
-	m.requestBody.SetHeight(2 * (totalHeight / 3))
+	m.requestBody.SetWidth(remainingWidth)
+	m.requestBody.SetHeight(2 * (remainingHeight / 3))
 
 	// there's a bug in viewport: https://github.com/charmbracelet/bubbles/pull/388
-	m.response.Height = totalHeight / 3
+	m.response.Height = remainingHeight / 3
 	// .SetWidth() and .Width are calculated differently. 2 seems to be magic difference for my case
-	m.response.Width = m.width - rightPadding + 2
+	m.response.Width = remainingWidth + 2
 }
 
 func (m model) View() string {
@@ -180,7 +181,7 @@ func (m model) View() string {
 	doc.WriteString("\n")
 	doc.WriteString(help)
 
-	return docStyle.Render(doc.String())
+	return DocStyle.Render(doc.String())
 }
 
 func (m model) sendRequest() string {

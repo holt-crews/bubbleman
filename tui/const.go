@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/charmbracelet/bubbles/key"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -22,27 +23,21 @@ const (
 
 var (
 	httpMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"}
-	cursorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(white))
 
-	cursorLineStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(cyan))
-
-	placeholderStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color(cyan))
-
-	endOfBufferStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color(cyan))
-
-	focusedPlaceholderStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color(cyan))
+	cursorStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color(white))
+	cursorLineStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
+	placeholderStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
+	endOfBufferStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
+	focusedPlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
 
 	focusedBorderStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(lipgloss.Color(blue))
+	blurredBorderStyle = lipgloss.NewStyle().Border(lipgloss.HiddenBorder())
 
-	blurredBorderStyle = lipgloss.NewStyle().
-				Border(lipgloss.HiddenBorder())
-	docStyle = lipgloss.NewStyle().Padding(1, 2, 1, 2)
+	DocStyle = lipgloss.NewStyle().Margin(0, 2)
+
+	WindowSize tea.WindowSizeMsg
 )
 
 type keymap = struct {
