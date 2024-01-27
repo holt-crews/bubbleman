@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// TODO: make this dynamic somehow
 	helpHeight = 2
 
 	// TODO: pull in from config file
@@ -34,8 +35,11 @@ var (
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(blue)
 	blurredBorderStyle = lipgloss.NewStyle().Border(lipgloss.HiddenBorder())
+	methodBoxStyle     = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(blue).Padding(0, 1).Margin(0, 1, 0, 0)
 
-	DocStyle = lipgloss.NewStyle().Margin(0, 2)
+	DocStyle = lipgloss.NewStyle().Margin(2, 2, 0, 1)
 
 	WindowSize tea.WindowSizeMsg
 )

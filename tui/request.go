@@ -59,11 +59,10 @@ func newTextarea() textarea.Model {
 }
 
 type model struct {
-	width        int
-	height       int
 	keymap       keymap
 	help         help.Model
 	requestBody  textarea.Model
+	httpMethod   string
 	urlbar       textinput.Model
 	response     viewport.Model
 	viewReady    bool
@@ -78,6 +77,7 @@ func InitialRequest() model {
 
 	m := model{
 		urlbar:      newUrlbar(),
+		httpMethod:  "GET",
 		requestBody: newTextarea(),
 		help:        help.New(),
 		keymap:      Keymap,
@@ -145,7 +145,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // needs to be a pointer receiver in order to update
 func (m *model) sizeInputs() {
 	top, right, bottom, left := DocStyle.GetMargin()
-	remainingHeight := WindowSize.Height - top - bottom - (lipgloss.Height(m.urlbar.View()) + helpHeight)
+	remainingHeight := WindowSize.Height - top - bottom
 	remainingWidth := WindowSize.Width - left - right
 
 	m.urlbar.Width = remainingWidth
@@ -154,7 +154,8 @@ func (m *model) sizeInputs() {
 	m.requestBody.SetHeight(2 * (remainingHeight / 3))
 
 	// there's a bug in viewport: https://github.com/charmbracelet/bubbles/pull/388
-	m.response.Height = remainingHeight / 3
+	// TODO: ideally the "- 2" is dynamic based on the height of the http method box
+	m.response.Height = (remainingHeight / 3) - 2
 	// .SetWidth() and .Width are calculated differently. 2 seems to be magic difference for my case
 	m.response.Width = remainingWidth + 2
 }
@@ -168,9 +169,15 @@ func (m model) View() string {
 		m.keymap.Quit,
 	})
 
+	bar := lipgloss.JoinHorizontal(
+		lipgloss.Center,
+		methodBoxStyle.Render(m.httpMethod),
+		m.urlbar.View(),
+	)
+	lipgloss.Height(bar)
 	requestInputs := lipgloss.JoinVertical(
 		lipgloss.Top,
-		"GET "+m.urlbar.View(),
+		bar,
 		m.requestBody.View(),
 		m.response.View(),
 	)
