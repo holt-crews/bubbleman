@@ -15,12 +15,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/erikgeiser/promptkit/selection"
+
 	"github.com/holt-crews/bubbleman/helpers"
 )
-
-type keymap = struct {
-	request, url, httpMethod, send, quit key.Binding
-}
 
 func newUrlbar() textinput.Model {
 	t := textinput.New()
@@ -82,29 +79,8 @@ func InitialRequest() model {
 		urlbar:      newUrlbar(),
 		requestBody: newTextarea(),
 		help:        help.New(),
-		keymap: keymap{
-			request: key.NewBinding(
-				key.WithKeys("tab"),
-				key.WithHelp("tab", "edit request body"),
-			),
-			url: key.NewBinding(
-				key.WithKeys("ctrl+m"),
-				key.WithHelp("ctrl+m", "edit url bar"),
-			),
-			httpMethod: key.NewBinding(
-				key.WithKeys("ctrl+u"),
-				key.WithHelp("ctrl+u", "edit http method"),
-			),
-			send: key.NewBinding(
-				key.WithKeys("ctrl+s"),
-				key.WithHelp("ctrl+s", "send request"),
-			),
-			quit: key.NewBinding(
-				key.WithKeys("esc", "ctrl+c"),
-				key.WithHelp("esc", "quit"),
-			),
-		},
-		selection: selection.NewModel(sel),
+		keymap:      Keymap,
+		selection:   selection.NewModel(sel),
 	}
 	m.selection.Init()
 
@@ -133,19 +109,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.keymap.quit):
+		case key.Matches(msg, m.keymap.Quit):
 			return m, tea.Quit
-		case key.Matches(msg, m.keymap.request):
+		case key.Matches(msg, m.keymap.Request):
 			m.urlbar.Blur()
 			cmd := m.requestBody.Focus()
 			cmds = append(cmds, cmd)
-		case key.Matches(msg, m.keymap.url):
+		case key.Matches(msg, m.keymap.Url):
 			m.requestBody.Blur()
 			cmd := m.urlbar.Focus()
 			cmds = append(cmds, cmd)
-		case key.Matches(msg, m.keymap.httpMethod):
+		case key.Matches(msg, m.keymap.HttpMethod):
 			m.methodToggle = !m.methodToggle
-		case key.Matches(msg, m.keymap.send):
+		case key.Matches(msg, m.keymap.Send):
 			m.urlbar.Blur()
 			m.requestBody.Blur()
 			resp := m.sendRequest()
@@ -184,10 +160,10 @@ func (m *model) sizeInputs() {
 func (m model) View() string {
 	doc := strings.Builder{}
 	help := m.help.ShortHelpView([]key.Binding{
-		m.keymap.request,
-		m.keymap.url,
-		m.keymap.send,
-		m.keymap.quit,
+		m.keymap.Request,
+		m.keymap.Url,
+		m.keymap.Send,
+		m.keymap.Quit,
 	})
 
 	requestInputs := lipgloss.JoinVertical(
