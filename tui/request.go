@@ -31,7 +31,8 @@ func newUrlbar() textinput.Model {
 
 func (m *model) newResponseView() viewport.Model {
 	m.response = viewport.New(1, 1)
-	m.response.Style = focusedBorderStyle
+	// currently faded text but will want color when a response is received
+	m.response.Style = focusedBorderStyle.Foreground(gray)
 	m.response.SetContent(fmt.Sprintf("{\"response\": \"OK\"...}"))
 	m.response.MouseWheelEnabled = true
 	return m.response

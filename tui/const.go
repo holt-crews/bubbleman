@@ -7,32 +7,32 @@ import (
 )
 
 const (
-	helpHeight   = 2
-	rightPadding = 6
+	helpHeight = 2
 
 	// TODO: pull in from config file
-	black   = "#928374"
-	blue    = "#83a598"
-	cyan    = "#8ec07c"
-	green   = "#b8bb26"
-	magenta = "#d3869b"
-	red     = "#fb4934"
-	white   = "#ebdbb2"
-	yellow  = "#fabd2f"
+	black   = lipgloss.Color("#928374")
+	blue    = lipgloss.Color("#83a598")
+	cyan    = lipgloss.Color("#8ec07c")
+	green   = lipgloss.Color("#b8bb26")
+	magenta = lipgloss.Color("#d3869b")
+	red     = lipgloss.Color("#fb4934")
+	white   = lipgloss.Color("#ebdbb2")
+	yellow  = lipgloss.Color("#fabd2f")
+	gray    = lipgloss.Color("240") // mostly for placeholder text
 )
 
 var (
 	httpMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"}
 
-	cursorStyle             = lipgloss.NewStyle().Foreground(lipgloss.Color(white))
-	cursorLineStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
-	placeholderStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
-	endOfBufferStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
-	focusedPlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(cyan))
+	cursorStyle             = lipgloss.NewStyle().Foreground(white)
+	cursorLineStyle         = lipgloss.NewStyle().Foreground(cyan)
+	placeholderStyle        = lipgloss.NewStyle().Foreground(cyan)
+	endOfBufferStyle        = lipgloss.NewStyle().Foreground(cyan)
+	focusedPlaceholderStyle = lipgloss.NewStyle().Foreground(cyan)
 
 	focusedBorderStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color(blue))
+				BorderForeground(blue)
 	blurredBorderStyle = lipgloss.NewStyle().Border(lipgloss.HiddenBorder())
 
 	DocStyle = lipgloss.NewStyle().Margin(0, 2)
