@@ -39,7 +39,7 @@ var (
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(blue).Padding(0, 1).Margin(0, 1, 0, 0)
 
-	DocStyle = lipgloss.NewStyle().Margin(2, 2, 0, 1)
+	DocStyle = lipgloss.NewStyle().Margin(2, 3, 0, 1)
 
 	WindowSize tea.WindowSizeMsg
 )

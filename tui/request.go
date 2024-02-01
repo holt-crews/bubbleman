@@ -19,6 +19,14 @@ import (
 	"github.com/holt-crews/bubbleman/helpers"
 )
 
+// consider just wrapping everything into a bubble tea Model in a "components package"
+type BubbleModel interface {
+	// Init() tea.Cmd
+	// for some unknown reason, bubbles don't actually implement the tea.Model interface, missing Init()
+	// Update(tea.Msg) (tea.Model, tea.Cmd)
+	View() string
+}
+
 func newUrlbar() textinput.Model {
 	t := textinput.New()
 	t.Prompt = ""
@@ -68,6 +76,7 @@ type model struct {
 	viewReady    bool
 	selection    *selection.Model[string]
 	methodToggle bool
+	components   []BubbleModel
 	// focus       int  // will probably want to come back to this when all components are laid out
 }
 
@@ -82,6 +91,7 @@ func InitialRequest() model {
 		help:        help.New(),
 		keymap:      Keymap,
 		selection:   selection.NewModel(sel),
+		components:  []BubbleModel{newUrlbar(), newTextarea()},
 	}
 	m.selection.Init()
 
@@ -151,8 +161,8 @@ func (m *model) sizeInputs() {
 	m.urlbar.Width = remainingWidth
 
 	m.requestBody.SetWidth(remainingWidth)
-	m.requestBody.SetHeight(2 * (remainingHeight / 3))
-
+	// gotta be careful with division because it floors it, the divide by 3 messes with it, consider alternate ways
+	m.requestBody.SetHeight(2*(remainingHeight/3) - 2)
 	// there's a bug in viewport: https://github.com/charmbracelet/bubbles/pull/388
 	// TODO: ideally the "- 2" is dynamic based on the height of the http method box
 	m.response.Height = (remainingHeight / 3) - 2
