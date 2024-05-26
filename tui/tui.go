@@ -10,31 +10,23 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/erikgeiser/promptkit/selection"
 
+	"github.com/holt-crews/bubbleman/components"
 	"github.com/holt-crews/bubbleman/helpers"
 )
 
 // consider just wrapping everything into a bubble tea Model in a "components package"
 type Component interface {
+	// tea.Model
 	// Init() tea.Cmd
-	// for some unknown reason, bubbles don't actually implement the tea.Model interface, missing Init()
-	// Update(tea.Msg) (tea.Model, tea.Cmd)
 	View() string
-}
-
-func newUrlbar() textinput.Model {
-	t := textinput.New()
-	t.Prompt = ""
-	t.Placeholder = "https://api.something.com/v1/users"
-	t.Cursor.Style = cursorStyle
-	t.KeyMap.DeleteWordBackward.SetEnabled(false)
-	t.Blur()
-	return t
+	Update(msg tea.Msg) tea.Cmd
+	Value() string
+	// Select() // used when "enter" is hit on that component
 }
 
 func (m *model) newResponseView() viewport.Model {
@@ -71,7 +63,7 @@ type model struct {
 	help         help.Model
 	requestBody  textarea.Model
 	httpMethod   string
-	urlbar       textinput.Model
+	urlbar       Component
 	response     viewport.Model
 	viewReady    bool
 	selection    *selection.Model[string]
@@ -85,13 +77,16 @@ func InitialRequest() model {
 	sel.Filter = nil
 
 	m := model{
-		urlbar:      newUrlbar(),
+		urlbar: components.NewUrlBar(
+			components.WithPrompt(""),
+			components.WithPlaceholder("https://api.com/v1"),
+		),
 		httpMethod:  "GET",
 		requestBody: newTextarea(),
 		help:        help.New(),
 		keymap:      Keymap,
 		selection:   selection.NewModel(sel),
-		components:  []Component{newUrlbar(), newTextarea()},
+		// components:  []Component{newUrlbar(), newTextarea()},
 	}
 	m.selection.Init()
 
@@ -113,7 +108,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	m.requestBody, rCmd = m.requestBody.Update(msg)
-	m.urlbar, uCmd = m.urlbar.Update(msg)
+	uCmd = m.urlbar.Update(msg)
 	m.response, respCmd = m.response.Update(msg)
 	cmds = append(cmds, rCmd, uCmd, respCmd)
 
@@ -123,17 +118,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.Quit):
 			return m, tea.Quit
 		case key.Matches(msg, m.keymap.Request):
-			m.urlbar.Blur()
+			// m.urlbar.Blur()
 			cmd := m.requestBody.Focus()
 			cmds = append(cmds, cmd)
 		case key.Matches(msg, m.keymap.Url):
 			m.requestBody.Blur()
-			cmd := m.urlbar.Focus()
-			cmds = append(cmds, cmd)
+			// cmd := m.urlbar.Focus()
+			// cmds = append(cmds, cmd)
 		case key.Matches(msg, m.keymap.HttpMethod):
 			m.methodToggle = !m.methodToggle
 		case key.Matches(msg, m.keymap.Send):
-			m.urlbar.Blur()
+			// m.urlbar.Blur()
 			m.requestBody.Blur()
 			resp := m.sendRequest()
 			m.response.SetContent(resp)
@@ -158,7 +153,7 @@ func (m *model) sizeInputs() {
 	remainingHeight := WindowSize.Height - top - bottom
 	remainingWidth := WindowSize.Width - left - right
 
-	m.urlbar.Width = remainingWidth
+	// m.urlbar.Width = remainingWidth
 
 	m.requestBody.SetWidth(remainingWidth)
 	// gotta be careful with division because it floors it, the divide by 3 messes with it, consider alternate ways
@@ -179,6 +174,9 @@ func (m model) View() string {
 		m.keymap.Quit,
 	})
 
+	// TODO: think about if there's a way to place this style information on the component
+	// and then we could have a function that we just call for each element in the grid
+	// right now it's kinda tricky because "requestInputs" is dependent on "bar"
 	bar := lipgloss.JoinHorizontal(
 		lipgloss.Center,
 		methodBoxStyle.Render(m.httpMethod),

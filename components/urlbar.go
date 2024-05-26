@@ -2,6 +2,7 @@ package components
 
 import (
 	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -11,6 +12,16 @@ type UrlBar struct {
 
 func (u *UrlBar) View() string {
 	return u.Model.View()
+}
+
+func (u *UrlBar) Update(msg tea.Msg) tea.Cmd {
+	t, cmd := u.Model.Update(msg)
+	u.Model = t
+	return cmd
+}
+
+func (u *UrlBar) Value() string {
+	return u.Model.Value()
 }
 
 type UrlBarOption func(*UrlBar)
