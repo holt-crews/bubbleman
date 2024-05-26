@@ -10,13 +10,13 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/erikgeiser/promptkit/selection"
 
-	"github.com/holt-crews/bubbleman/components"
 	"github.com/holt-crews/bubbleman/helpers"
+	responsebox "github.com/holt-crews/bubbleman/response"
+	"github.com/holt-crews/bubbleman/urlbar"
 )
 
 // consider just wrapping everything into a bubble tea Model in a "components package"
@@ -27,15 +27,6 @@ type Component interface {
 	Update(msg tea.Msg) tea.Cmd
 	Value() string
 	// Select() // used when "enter" is hit on that component
-}
-
-func (m *model) newResponseView() viewport.Model {
-	m.response = viewport.New(1, 1)
-	// currently faded text but will want color when a response is received
-	m.response.Style = focusedBorderStyle.Foreground(gray)
-	m.response.SetContent(fmt.Sprintf("{\"response\": \"OK\"...}"))
-	m.response.MouseWheelEnabled = true
-	return m.response
 }
 
 func newTextarea() textarea.Model {
@@ -64,7 +55,7 @@ type model struct {
 	requestBody  textarea.Model
 	httpMethod   string
 	urlbar       Component
-	response     viewport.Model
+	response     Component
 	viewReady    bool
 	selection    *selection.Model[string]
 	methodToggle bool
@@ -77,9 +68,9 @@ func InitialRequest() model {
 	sel.Filter = nil
 
 	m := model{
-		urlbar: components.NewUrlBar(
-			components.WithPrompt(""),
-			components.WithPlaceholder("https://api.com/v1"),
+		urlbar: urlbar.NewUrlBar(
+			urlbar.WithPrompt(""),
+			urlbar.WithPlaceholder("https://api.com/v1"),
 		),
 		httpMethod:  "GET",
 		requestBody: newTextarea(),
@@ -109,7 +100,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	m.requestBody, rCmd = m.requestBody.Update(msg)
 	uCmd = m.urlbar.Update(msg)
-	m.response, respCmd = m.response.Update(msg)
+	respCmd = m.response.Update(msg)
 	cmds = append(cmds, rCmd, uCmd, respCmd)
 
 	switch msg := msg.(type) {
@@ -130,14 +121,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.Send):
 			// m.urlbar.Blur()
 			m.requestBody.Blur()
-			resp := m.sendRequest()
-			m.response.SetContent(resp)
+			// TODO: fix
+			// resp := m.sendRequest()
+			// m.response.SetContent(resp)
 			// cmds = append(cmds, cmd)
 		}
 	case tea.WindowSizeMsg:
 		WindowSize = msg
 		if !m.viewReady {
-			m.newResponseView()
+			m.response = responsebox.NewResponseBox(
+				responsebox.WithPlaceholder(fmt.Sprintf("{\"response\": \"OK\"...}")),
+				responsebox.WithStyle(focusedBorderStyle.Foreground(gray)),
+			)
 			m.viewReady = true
 		}
 		m.sizeInputs()
@@ -160,9 +155,11 @@ func (m *model) sizeInputs() {
 	m.requestBody.SetHeight(2*(remainingHeight/3) - 2)
 	// there's a bug in viewport: https://github.com/charmbracelet/bubbles/pull/388
 	// TODO: ideally the "- 2" is dynamic based on the height of the http method box
-	m.response.Height = (remainingHeight / 3) - 2
+
+	// TODO: fix
+	// m.response.Height = (remainingHeight / 3) - 2
 	// .SetWidth() and .Width are calculated differently. 2 seems to be magic difference for my case
-	m.response.Width = remainingWidth + 2
+	// m.response.Width = remainingWidth + 2
 }
 
 func (m model) View() string {
