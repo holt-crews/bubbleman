@@ -1,4 +1,4 @@
-package components
+package urlbar
 
 import (
 	"github.com/charmbracelet/bubbles/textinput"
