@@ -54,8 +54,8 @@ var Keymap = keymap{
 		key.WithHelp("tab", "edit request body"),
 	),
 	Url: key.NewBinding(
-		key.WithKeys("ctrl+m"),
-		key.WithHelp("ctrl+m", "edit url bar"),
+		key.WithKeys("ctrl+b"),
+		key.WithHelp("ctrl+b", "edit url bar"),
 	),
 	HttpMethod: key.NewBinding(
 		key.WithKeys("ctrl+u"),
@@ -66,7 +66,7 @@ var Keymap = keymap{
 		key.WithHelp("ctrl+s", "send request"),
 	),
 	Quit: key.NewBinding(
-		key.WithKeys("esc", "ctrl+c"),
-		key.WithHelp("esc", "quit"),
+		key.WithKeys("ctrl+c"),
+		key.WithHelp("ctrl+c", "quit"),
 	),
 }
