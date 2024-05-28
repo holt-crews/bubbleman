@@ -6,32 +6,32 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type ResponseBox struct {
+type Model struct {
 	viewport.Model
 }
 
-func (u *ResponseBox) View() string {
+func (u *Model) View() string {
 	return u.Model.View()
 }
 
-func (u *ResponseBox) Update(msg tea.Msg) tea.Cmd {
+func (u *Model) Update(msg tea.Msg) tea.Cmd {
 	t, cmd := u.Model.Update(msg)
 	u.Model = t
 	return cmd
 }
 
 // TODO
-func (u *ResponseBox) Value() string {
+func (u *Model) Value() string {
 	return ""
 }
 
-type ResponseBoxOption func(*ResponseBox)
+type Option func(*Model)
 
-func NewResponseBox(opts ...ResponseBoxOption) *ResponseBox {
+func New(opts ...Option) *Model {
 	t := viewport.New(1, 1)
 	t.MouseWheelEnabled = true
 
-	responsebox := &ResponseBox{
+	responsebox := &Model{
 		Model: t,
 	}
 
@@ -42,14 +42,14 @@ func NewResponseBox(opts ...ResponseBoxOption) *ResponseBox {
 	return responsebox
 }
 
-func WithPlaceholder(placeholder string) ResponseBoxOption {
-	return func(u *ResponseBox) {
+func WithPlaceholder(placeholder string) Option {
+	return func(u *Model) {
 		u.SetContent(placeholder)
 	}
 }
 
-func WithStyle(style lipgloss.Style) ResponseBoxOption {
-	return func(u *ResponseBox) {
+func WithStyle(style lipgloss.Style) Option {
+	return func(u *Model) {
 		u.Style = style
 	}
 }

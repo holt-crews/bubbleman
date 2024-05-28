@@ -6,32 +6,32 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type UrlBar struct {
+type Model struct {
 	textinput.Model
 }
 
-func (u *UrlBar) View() string {
+func (u *Model) View() string {
 	return u.Model.View()
 }
 
-func (u *UrlBar) Update(msg tea.Msg) tea.Cmd {
+func (u *Model) Update(msg tea.Msg) tea.Cmd {
 	t, cmd := u.Model.Update(msg)
 	u.Model = t
 	return cmd
 }
 
-func (u *UrlBar) Value() string {
+func (u *Model) Value() string {
 	return u.Model.Value()
 }
 
-type UrlBarOption func(*UrlBar)
+type Option func(*Model)
 
-func NewUrlBar(opts ...UrlBarOption) *UrlBar {
+func New(opts ...Option) *Model {
 	t := textinput.New()
 	t.KeyMap.DeleteWordBackward.SetEnabled(false)
 	t.Blur()
 
-	urlbar := &UrlBar{
+	urlbar := &Model{
 		Model: t,
 	}
 
@@ -42,20 +42,20 @@ func NewUrlBar(opts ...UrlBarOption) *UrlBar {
 	return urlbar
 }
 
-func WithPrompt(prompt string) UrlBarOption {
-	return func(u *UrlBar) {
+func WithPrompt(prompt string) Option {
+	return func(u *Model) {
 		u.Prompt = prompt
 	}
 }
 
-func WithPlaceholder(placeholder string) UrlBarOption {
-	return func(u *UrlBar) {
+func WithPlaceholder(placeholder string) Option {
+	return func(u *Model) {
 		u.Placeholder = placeholder
 	}
 }
 
-func WithCursorStyle(style lipgloss.Style) UrlBarOption {
-	return func(u *UrlBar) {
+func WithCursorStyle(style lipgloss.Style) Option {
+	return func(u *Model) {
 		u.Cursor.Style = style
 	}
 }
