@@ -15,7 +15,8 @@ import (
 	"github.com/erikgeiser/promptkit/selection"
 
 	"github.com/holt-crews/bubbleman/helpers"
-	responsebox "github.com/holt-crews/bubbleman/response"
+	"github.com/holt-crews/bubbleman/requestbody"
+	"github.com/holt-crews/bubbleman/responsebox"
 	"github.com/holt-crews/bubbleman/urlbar"
 )
 
@@ -26,33 +27,16 @@ type Component interface {
 	View() string
 	Update(msg tea.Msg) tea.Cmd
 	Value() string
+	// Focus()
+	// Blur()
+	// SetDimensions()
 	// Select() // used when "enter" is hit on that component
-}
-
-func newTextarea() textarea.Model {
-	t := textarea.New()
-	t.Prompt = ""
-	t.Placeholder = "Type something"
-	t.ShowLineNumbers = true
-	t.Cursor.Style = cursorStyle
-	t.FocusedStyle.Placeholder = focusedPlaceholderStyle
-	t.BlurredStyle.Placeholder = placeholderStyle
-	t.FocusedStyle.CursorLine = cursorLineStyle
-	t.FocusedStyle.Base = focusedBorderStyle
-	t.BlurredStyle.Base = focusedBorderStyle
-	t.FocusedStyle.EndOfBuffer = endOfBufferStyle
-	t.BlurredStyle.EndOfBuffer = endOfBufferStyle
-	t.KeyMap.DeleteWordBackward.SetEnabled(false)
-	t.KeyMap.LineNext = key.NewBinding(key.WithKeys("down"))
-	t.KeyMap.LinePrevious = key.NewBinding(key.WithKeys("up"))
-	t.Blur()
-	return t
 }
 
 type model struct {
 	keymap       keymap
 	help         help.Model
-	requestBody  textarea.Model
+	requestBody  Component
 	httpMethod   string
 	urlbar       Component
 	response     Component
@@ -68,15 +52,21 @@ func InitialRequest() model {
 	sel.Filter = nil
 
 	m := model{
-		urlbar: urlbar.NewUrlBar(
+		urlbar: urlbar.New(
 			urlbar.WithPrompt(""),
 			urlbar.WithPlaceholder("https://api.com/v1"),
 		),
-		httpMethod:  "GET",
-		requestBody: newTextarea(),
-		help:        help.New(),
-		keymap:      Keymap,
-		selection:   selection.NewModel(sel),
+		httpMethod: "GET",
+		requestBody: requestbody.New(
+			requestbody.WithPrompt(""),
+			requestbody.WithPlaceholder("Type something..."),
+			requestbody.WithCursorStyle(cursorStyle),
+			requestbody.WithFocusedStyle(focusedTextAreaStyle),
+			requestbody.WithBlurredStyle(blurredTextAreaStyle),
+		),
+		help:      help.New(),
+		keymap:    Keymap,
+		selection: selection.NewModel(sel),
 		// components:  []Component{newUrlbar(), newTextarea()},
 	}
 	m.selection.Init()
@@ -98,7 +88,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 	var cmds []tea.Cmd
 
-	m.requestBody, rCmd = m.requestBody.Update(msg)
+	rCmd = m.requestBody.Update(msg)
 	uCmd = m.urlbar.Update(msg)
 	respCmd = m.response.Update(msg)
 	cmds = append(cmds, rCmd, uCmd, respCmd)
@@ -129,7 +119,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		WindowSize = msg
 		if !m.viewReady {
-			m.response = responsebox.NewResponseBox(
+			m.response = responsebox.New(
 				responsebox.WithPlaceholder(fmt.Sprintf("{\"response\": \"OK\"...}")),
 				responsebox.WithStyle(focusedBorderStyle.Foreground(gray)),
 			)

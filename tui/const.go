@@ -2,6 +2,7 @@ package tui
 
 import (
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -42,6 +43,18 @@ var (
 	DocStyle = lipgloss.NewStyle().Margin(2, 3, 0, 1)
 
 	WindowSize tea.WindowSizeMsg
+
+	focusedTextAreaStyle = textarea.Style{
+		Placeholder: focusedPlaceholderStyle,
+		CursorLine:  cursorLineStyle,
+		Base:        focusedBorderStyle,
+		EndOfBuffer: endOfBufferStyle,
+	}
+	blurredTextAreaStyle = textarea.Style{
+		Placeholder: placeholderStyle,
+		Base:        focusedBorderStyle,
+		EndOfBuffer: endOfBufferStyle,
+	}
 )
 
 type keymap = struct {
