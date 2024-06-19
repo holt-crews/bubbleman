@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -20,54 +19,66 @@ import (
 	"github.com/holt-crews/bubbleman/urlbar"
 )
 
-// consider just wrapping everything into a bubble tea Model in a "components package"
+type Adjustable interface {
+	SetWidth(w int)
+	SetHeight(w int)
+}
+
+type Selectable interface {
+	Focus() tea.Cmd
+	Blur()
+}
+
 type Component interface {
 	// tea.Model
 	// Init() tea.Cmd
 	View() string
 	Update(msg tea.Msg) tea.Cmd
 	Value() string
-	// Focus()
-	// Blur()
+
+	Selectable
+	Adjustable
 	// SetDimensions()
 	// Select() // used when "enter" is hit on that component
 }
 
 type model struct {
-	keymap       keymap
 	help         help.Model
 	requestBody  Component
-	httpMethod   string
 	urlbar       Component
 	response     Component
-	viewReady    bool
 	selection    *selection.Model[string]
-	methodToggle bool
+	httpMethod   string
+	keymap       keymap
 	components   []Component
-	// focus       int  // will probably want to come back to this when all components are laid out
+	viewReady    bool
+	methodToggle bool
 }
 
-func InitialRequest() model {
+func initialModel() model {
 	sel := selection.New("Items", httpMethods)
 	sel.Filter = nil
 
+	urlbar := urlbar.New(
+		urlbar.WithPrompt(""),
+		urlbar.WithPlaceholder("https://api.com/v1"),
+	)
+	requestBody := requestbody.New(
+		requestbody.WithPrompt(""),
+		requestbody.WithPlaceholder("Type something..."),
+		requestbody.WithCursorStyle(cursorStyle),
+		requestbody.WithFocusedStyle(focusedTextAreaStyle),
+		requestbody.WithBlurredStyle(blurredTextAreaStyle),
+	)
+
 	m := model{
-		urlbar: urlbar.New(
-			urlbar.WithPrompt(""),
-			urlbar.WithPlaceholder("https://api.com/v1"),
-		),
-		httpMethod: "GET",
-		requestBody: requestbody.New(
-			requestbody.WithPrompt(""),
-			requestbody.WithPlaceholder("Type something..."),
-			requestbody.WithCursorStyle(cursorStyle),
-			requestbody.WithFocusedStyle(focusedTextAreaStyle),
-			requestbody.WithBlurredStyle(blurredTextAreaStyle),
-		),
-		help:      help.New(),
-		keymap:    Keymap,
-		selection: selection.NewModel(sel),
-		// components:  []Component{newUrlbar(), newTextarea()},
+		urlbar:      urlbar,
+		httpMethod:  "GET",
+		requestBody: requestBody,
+		help:        help.New(),
+		keymap:      Keymap,
+		selection:   selection.NewModel(sel),
+		components:  []Component{urlbar, requestBody},
 	}
 	m.selection.Init()
 
@@ -120,7 +131,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		WindowSize = msg
 		if !m.viewReady {
 			m.response = responsebox.New(
-				responsebox.WithPlaceholder(fmt.Sprintf("{\"response\": \"OK\"...}")),
+				responsebox.WithPlaceholder("{\"response\": \"OK\"...}"),
 				responsebox.WithStyle(focusedBorderStyle.Foreground(gray)),
 			)
 			m.viewReady = true
@@ -138,7 +149,7 @@ func (m *model) sizeInputs() {
 	remainingHeight := WindowSize.Height - top - bottom
 	remainingWidth := WindowSize.Width - left - right
 
-	// m.urlbar.Width = remainingWidth
+	m.urlbar.SetWidth(remainingWidth)
 
 	m.requestBody.SetWidth(remainingWidth)
 	// gotta be careful with division because it floors it, the divide by 3 messes with it, consider alternate ways
@@ -147,9 +158,9 @@ func (m *model) sizeInputs() {
 	// TODO: ideally the "- 2" is dynamic based on the height of the http method box
 
 	// TODO: fix
-	// m.response.Height = (remainingHeight / 3) - 2
+	m.response.SetHeight((remainingHeight / 3) - 2)
 	// .SetWidth() and .Width are calculated differently. 2 seems to be magic difference for my case
-	// m.response.Width = remainingWidth + 2
+	m.response.SetWidth(remainingWidth + 2)
 }
 
 func (m model) View() string {

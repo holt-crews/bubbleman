@@ -22,7 +22,7 @@ func StartTea() error {
 		}()
 	}
 
-	m := NewModel()
+	m := initialModel()
 	program := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseAllMotion())
 
 	if _, err := program.Run(); err != nil {

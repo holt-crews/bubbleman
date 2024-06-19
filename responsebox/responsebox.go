@@ -8,21 +8,44 @@ import (
 
 type Model struct {
 	viewport.Model
+	FocusedStyle lipgloss.Style
+	BlurredStyle lipgloss.Style
+
+	focus bool
 }
 
-func (u *Model) View() string {
-	return u.Model.View()
+func (m *Model) View() string {
+	return m.Model.View()
 }
 
-func (u *Model) Update(msg tea.Msg) tea.Cmd {
-	t, cmd := u.Model.Update(msg)
-	u.Model = t
+func (m *Model) Blur() {
+	m.focus = false
+	m.Style = m.BlurredStyle
+}
+
+func (m *Model) Focus() tea.Cmd {
+	m.focus = true
+	m.Style = m.FocusedStyle
+	return nil
+}
+
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
+	t, cmd := m.Model.Update(msg)
+	m.Model = t
 	return cmd
 }
 
-// TODO
-func (u *Model) Value() string {
+// TODO: implement
+func (m *Model) Value() string {
 	return ""
+}
+
+func (m *Model) SetWidth(w int) {
+	m.Width = w
+}
+
+func (m *Model) SetHeight(h int) {
+	m.Height = h
 }
 
 type Option func(*Model)
@@ -43,13 +66,25 @@ func New(opts ...Option) *Model {
 }
 
 func WithPlaceholder(placeholder string) Option {
-	return func(u *Model) {
-		u.SetContent(placeholder)
+	return func(m *Model) {
+		m.SetContent(placeholder)
 	}
 }
 
 func WithStyle(style lipgloss.Style) Option {
-	return func(u *Model) {
-		u.Style = style
+	return func(m *Model) {
+		m.Style = style
+	}
+}
+
+func WithFocusedStyle(style lipgloss.Style) Option {
+	return func(m *Model) {
+		m.FocusedStyle = style
+	}
+}
+
+func WithBlurredStyle(style lipgloss.Style) Option {
+	return func(m *Model) {
+		m.BlurredStyle = style
 	}
 }

@@ -10,18 +10,26 @@ type Model struct {
 	textinput.Model
 }
 
-func (u *Model) View() string {
-	return u.Model.View()
+func (m *Model) View() string {
+	return m.Model.View()
 }
 
-func (u *Model) Update(msg tea.Msg) tea.Cmd {
-	t, cmd := u.Model.Update(msg)
-	u.Model = t
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
+	t, cmd := m.Model.Update(msg)
+	m.Model = t
 	return cmd
 }
 
-func (u *Model) Value() string {
-	return u.Model.Value()
+func (m *Model) Value() string {
+	return m.Model.Value()
+}
+
+func (m *Model) SetWidth(w int) {
+	m.Width = w
+}
+
+func (m *Model) SetHeight(h int) {
+	// can't set height
 }
 
 type Option func(*Model)
@@ -43,19 +51,19 @@ func New(opts ...Option) *Model {
 }
 
 func WithPrompt(prompt string) Option {
-	return func(u *Model) {
-		u.Prompt = prompt
+	return func(m *Model) {
+		m.Prompt = prompt
 	}
 }
 
 func WithPlaceholder(placeholder string) Option {
-	return func(u *Model) {
-		u.Placeholder = placeholder
+	return func(m *Model) {
+		m.Placeholder = placeholder
 	}
 }
 
 func WithCursorStyle(style lipgloss.Style) Option {
-	return func(u *Model) {
-		u.Cursor.Style = style
+	return func(m *Model) {
+		m.Cursor.Style = style
 	}
 }
