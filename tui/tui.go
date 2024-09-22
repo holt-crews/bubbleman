@@ -71,10 +71,13 @@ func initialModel() model {
 		requestbody.WithBlurredStyle(blurredTextAreaStyle),
 	)
 
+	response := responsebox.New()
+
 	m := model{
 		urlbar:      urlbar,
 		httpMethod:  "GET",
 		requestBody: requestBody,
+		response:    response,
 		help:        help.New(),
 		keymap:      Keymap,
 		selection:   selection.NewModel(sel),
